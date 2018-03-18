@@ -32,11 +32,10 @@ echo "${DOMAIN}" > /.django
 }
 
 ## SSH CONFIG
-__create_user() {
+__ssh_config() {
 # Create a user to SSH into as.
 USER=`echo ${SSH_USER}`
 SSH_USERPASS=`echo ${SSH_PASS}`
-#useradd -u 1001 ${USER} 
 echo -e "$SSH_USERPASS\n$SSH_USERPASS" | (passwd --stdin ${USER})
 echo ssh ${USER} password: $SSH_USERPASS
 }
@@ -45,23 +44,23 @@ echo ssh ${USER} password: $SSH_USERPASS
 __git_clone() {
 REPO_PATH=`echo ${DOMAIN} | cut -f1 -d '.'`
 su - ${SSH_USER} -c "cd /${DOMAIN}/code/ && git config --global credential.helper store"
-su - ${SSH_USER} -c "cd /${DOMAIN}/code/ && git clone ${GIT_REPO} ${REPO_PATH}"
-mv /${DOMAIN}/cfg/.env /${DOMAIN}/code/${HOST}/
-unzip /${DOMAIN}/cfg/static.zip -d /${DOMAIN}/code/${HOST}/app/
-chown -R ${SSH_USER}:nginx /${DOMAIN}/code/${HOST}/
+su - ${SSH_USER} -c "cd /${DOMAIN}/code/ && git clone ${GIT_REPO} ${REPO_PATH} -b ${GIT_BRANCH}"
+su - ${SSH_USER} -c "cd /${DOMAIN}/code/ && git clone ${GIT_REPO_2} template_central -b ${GIT_BRANCH}"
+su - ${SSH_USER} -c "rm /${DOMAIN}/code/${REPO_PATH}/app/assets"
+su - ${SSH_USER} -c "ln -s /${DOMAIN}/code/template_central /${DOMAIN}/code/${REPO_PATH}/app/assets"
 
+chown -R ${SSH_USER}:nginx /${DOMAIN}/code/${HOST}/
 chmod +x /${DOMAIN}/code/
 }
 
-## Instalar requirementes.txt
-__install_requirements() {
-HOST=`echo ${DOMAIN} | cut -f1 -d '.'`
-source /AppEnv/bin/activate ; pip install -r /${DOMAIN}/code/${HOST}/require*.txt
-
+## Instalar Gems
+__install_gems() {
+REPO_PATH=`echo ${DOMAIN} | cut -f1 -d '.'`
+su - ${SSH_USER} -c "cd /${DOMAIN}/code/${REPO_PATH} && bundle install"
 }
 
 ## Chamar Funcoes
 __setup_app
-__create_user
+__ssh_config
 __git_clone
-__install_requirements
+__install_gems
