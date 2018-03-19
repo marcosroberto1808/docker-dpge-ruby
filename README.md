@@ -21,7 +21,7 @@ Para carregar a imagem e associar a portas externas:
         
         ou com múltiplas portas:
 
-        docker run -d -p 8080:8080 -p 422:22 --name=APP_ALIAS centos7-dpge-ruby  
+        docker run -h APP_ALIAS -d -p 8080:8080 -p 422:22 --name=APP_ALIAS centos7-dpge-ruby  
 
 Verificar os logs da aplicacao:
 
@@ -64,5 +64,5 @@ Comandos mais usados:
 
         Parar o container APP_ALIAS e depois apagar, rebuild da imagem e iniciar novamente o container APP_ALIAS :
         
-        docker stop APP_ALIAS ; docker rm APP_ALIAS ; docker build -t centos7-dpge-ruby . ; docker run -d -p 8080:8080 -p 422:22 --name=APP_ALIAS centos7-dpge-ruby
+        docker stop APP_ALIAS ; docker rm APP_ALIAS ; docker build -t centos7-dpge-ruby . ; docker run -h APP_ALIAS -d -p 8080:8080 -p 422:22 --name=APP_ALIAS centos7-dpge-ruby
 

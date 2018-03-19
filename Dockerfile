@@ -3,15 +3,20 @@
 # Variaveis de ambiente
 FROM centos:centos7
 LABEL author="marcos.roberto@defensoria.ce.def.br"
-ENV AMBIENTE "development"
+ENV TZ=America/Fortaleza
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+ENV AMBIENTE "stage"
+ENV DB_HOST "192.168.10.254"
+ENV DB_USER "postgres"
+ENV DB_PASS "postgres"
 ENV APPNAME "sic.devel"
 ENV ROOT_DOMAIN "defensoria.ce.def.br"
 ENV DOMAIN "${APPNAME}.${ROOT_DOMAIN}"
 ENV PORT 8080
 ENV GIT_REPO "https://github.com/dpgeceti/sic.git"
 ENV GIT_REPO_2 "https://github.com/dpgeceti/template_central.git"
-ENV GIT_USERNAME "marcosroberto1808"
-ENV GIT_PASSWORD "Fh&jvchv1808"
+ENV GIT_USERNAME "<git user>"
+ENV GIT_PASSWORD "<git password>"
 ENV GIT_BRANCH "master"
 RUN echo ${DOMAIN}
 
@@ -26,18 +31,19 @@ RUN ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N ''
 RUN ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' 
 
 # Dependencias Básicas
-RUN yum -y install nginx gcc unzip wget git which patch autoconf \
+RUN yum -y install gcc unzip wget git which patch autoconf \
 automake bison bzip2 gcc-c++ libffi-devel libtool readline-devel \
 sqlite-devel zlib-devel libyaml-devel openssl-devel \
-nodejs npm
+nodejs npm postgresql-devel
 RUN curl --fail -sSLo /etc/yum.repos.d/passenger.repo https://oss-binaries.phusionpassenger.com/yum/definitions/el-passenger.repo
-RUN yum -y install passenger
+RUN yum -y install nginx passenger passenger-devel 
 
 # Adicionar arquivos
 RUN mkdir -p /${DOMAIN}/cfg/
 RUN mkdir -p /${DOMAIN}/logs/
 COPY ./arquivos/nginx.conf /${DOMAIN}/cfg/
-COPY ./arquivos/passenger.conf /${DOMAIN}/cfg/
+COPY ./projetos/sic.zip /${DOMAIN}/cfg/
+COPY ./projetos/template_central.zip /${DOMAIN}/cfg/
 
 # define mountable dirs
 VOLUME ["/var/log/nginx"]
@@ -60,7 +66,7 @@ RUN /bin/bash -l -c "gem update --system"
 
 # Arquivos de configuracao nginx
 USER root
-RUN ln -s /${DOMAIN}/cfg/passenger.conf /etc/nginx/conf.d/
+# RUN ln -s /${DOMAIN}/cfg/passenger.conf /etc/nginx/conf.d/
 RUN mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf_orig
 RUN ln -s /${DOMAIN}/cfg/nginx.conf /etc/nginx/
 
