@@ -5,18 +5,19 @@ FROM centos:centos7
 LABEL author="marcos.roberto@defensoria.ce.def.br"
 ENV TZ=America/Fortaleza
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-ENV AMBIENTE "stage"
-ENV DB_HOST "192.168.10.254"
-ENV DB_USER "postgres"
-ENV DB_PASS "postgres"
 ENV APPNAME "sic.devel"
-ENV ROOT_DOMAIN "defensoria.ce.def.br"
+ENV AMBIENTE "stage"
+ENV DB_HOST "192.168.xx.xx"
+ENV DB_USER "db_user"
+ENV DB_PASS "db_pass"
+ENV ROOT_DOMAIN "dominio.com.br"
 ENV DOMAIN "${APPNAME}.${ROOT_DOMAIN}"
 ENV PORT 8080
-ENV GIT_REPO "https://github.com/dpgeceti/sic.git"
-ENV GIT_REPO_2 "https://github.com/dpgeceti/template_central.git"
-ENV GIT_USERNAME "<git user>"
-ENV GIT_PASSWORD "<git password>"
+# Variaveis para GitHub
+ENV GIT_REPO "https://github.com/git_repositorio.git"
+ENV GIT_REPO_2 "https://github.com/git_repositorio.git"
+ENV GIT_USERNAME "git_user"
+ENV GIT_PASSWORD "git_pass"
 ENV GIT_BRANCH "master"
 RUN echo ${DOMAIN}
 
@@ -24,13 +25,13 @@ RUN echo ${DOMAIN}
 ENV SSH_USER defensoria
 ENV SSH_PASS dpgeceti
 RUN yum -y update; yum clean all
-RUN yum -y install epel-release openssh-server passwd
+RUN yum -y install epel-release openssh-server passwd sudo
 RUN mkdir /var/run/sshd
 RUN ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key -N '' 
 RUN ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -N '' 
 RUN ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N '' 
 
-# Dependencias Básicas
+# Dependencias Básicas do Sistema
 RUN yum -y install gcc unzip wget git which patch autoconf \
 automake bison bzip2 gcc-c++ libffi-devel libtool readline-devel \
 sqlite-devel zlib-devel libyaml-devel openssl-devel \
@@ -42,16 +43,19 @@ RUN yum -y install nginx passenger passenger-devel
 RUN mkdir -p /${DOMAIN}/cfg/
 RUN mkdir -p /${DOMAIN}/logs/
 COPY ./arquivos/nginx.conf /${DOMAIN}/cfg/
-COPY ./projetos/sic.zip /${DOMAIN}/cfg/
-COPY ./projetos/template_central.zip /${DOMAIN}/cfg/
+# COPY ./projetos/sic.zip /${DOMAIN}/cfg/
+# COPY ./projetos/template_central.zip /${DOMAIN}/cfg/
 
 # define mountable dirs
 VOLUME ["/var/log/nginx"]
 
-# Add Usuario SSH e arquivos para autenticacao do GIT
+# Add Usuario SSH , permissões de SUDO e arquivos para autenticacao do GIT
 RUN adduser --home=/${DOMAIN}/code -u 1000 ${SSH_USER}
+RUN echo -e "$SSH_PASS\n$SSH_PASS" | (passwd --stdin ${SSH_USER})
 COPY ./arquivos/.git-credentials /${DOMAIN}/code/
 RUN chown ${SSH_USER}:${SSH_USER} /${DOMAIN}/code/.git-credentials
+RUN echo "${SSH_USER} ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/${SSH_USER} && \
+chmod 0440 /etc/sudoers.d/${SSH_USER}
 
 # Dependencias RVM e RUBY
 RUN mkdir -p /AppEnv
@@ -66,7 +70,6 @@ RUN /bin/bash -l -c "gem update --system"
 
 # Arquivos de configuracao nginx
 USER root
-# RUN ln -s /${DOMAIN}/cfg/passenger.conf /etc/nginx/conf.d/
 RUN mv /etc/nginx/nginx.conf /etc/nginx/nginx.conf_orig
 RUN ln -s /${DOMAIN}/cfg/nginx.conf /etc/nginx/
 
